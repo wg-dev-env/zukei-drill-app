@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>図形・グラフドリル印刷 - 開智対策（新5年）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kurenaido&family=Kiwi+Maru:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#f0eee9; --ink:#1a1a1a; --primary:#2a78d6; --primary-soft:#eaf3fd; --muted:#888; --line:#ccc; --paper:#fff; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family:'Zen Kurenaido','Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif; background:var(--bg); color:var(--ink); min-height:100vh; }
+  .container { max-width: 640px; margin: 0 auto; }
+  .screen { display: none; } .screen.active { display: block; }
+
+  .topbar { display:flex; justify-content:space-between; align-items:center; padding:14px 18px; border-bottom:1.5px solid var(--ink); background:var(--paper); }
+  .topbar-title { font:500 17px 'Kiwi Maru',serif; } .topbar-sub { font-size:11px; color:var(--muted); }
+  .link-btn { color:var(--primary); font-size:13px; cursor:pointer; background:none; border:none; font-family:inherit; padding:0; }
+  .hero { padding:22px 18px 4px; } .hero-title { font:500 26px 'Kiwi Maru',serif; } .hero-sub { font-size:12.5px; color:#777; margin-top:4px; }
+
+  .step-chrome { display:none; padding:16px 18px 0; gap:8px; align-items:center; }
+  .step-item { flex:1; display:flex; align-items:center; gap:7px; }
+  .step-circle { width:24px; height:24px; border:1.5px solid var(--ink); border-radius:50%; font-size:12px; text-align:center; line-height:22px; flex:none; }
+  .step-circle.done { background:var(--ink); color:#fff; } .step-circle.active { background:var(--primary); border-color:var(--primary); color:#fff; }
+  .step-label { font-size:12px; color:#999; } .step-label.active { color:var(--ink); }
+  .progress-bar { display:none; margin:14px 18px 0; height:5px; background:#eee; border-radius:3px; overflow:hidden; }
+  .progress-bar-fill { height:100%; background:var(--primary); border-radius:3px; transition:width .2s; }
+
+  .settings { padding:20px 18px 0; display:flex; flex-direction:column; gap:20px; }
+  .setting-group { display:flex; flex-direction:column; gap:18px; }
+  .field-label { font-size:12px; color:var(--muted); margin-bottom:7px; display:flex; justify-content:space-between; align-items:baseline; }
+  .segmented { display:flex; border:1.5px solid var(--ink); border-radius:10px; overflow:hidden; }
+  .segmented button { flex:1; padding:11px 0; text-align:center; font-size:15px; background:var(--paper); border:none; border-left:1.5px solid var(--ink); color:var(--ink); cursor:pointer; font-family:inherit; }
+  .segmented button:first-child { border-left:none; } .segmented button.selected { background:var(--primary); color:#fff; }
+  .unit-panel { border:1.5px solid var(--ink); border-radius:12px; overflow:hidden; background:var(--paper); }
+  .pill-btn { font-size:11.5px; border:1px dashed var(--primary); color:var(--primary); border-radius:20px; padding:2px 9px; cursor:pointer; background:none; font-family:inherit; }
+  .pill-btn.muted { border-color:#aaa; color:#777; }
+  .check-row { display:flex; gap:10px; align-items:center; padding:12px 13px; border-bottom:1px dashed var(--line); cursor:pointer; }
+  .check-row:last-child { border-bottom:none; }
+  .checkbox { width:19px; height:19px; border:1.5px solid var(--ink); border-radius:5px; flex:none; display:flex; align-items:center; justify-content:center; font-size:12px; color:#fff; }
+  .checkbox.checked { background:var(--ink); }
+  .check-text { font-size:14.5px; } .check-sub { font-size:11px; color:var(--muted); } .toggle-desc { font-size:11px; color:var(--muted); }
+  .switch { width:44px; height:26px; border:1.5px solid var(--ink); border-radius:20px; position:relative; flex:none; background:#e8e6e1; margin-left:auto; }
+  .switch.on { background:var(--primary); }
+  .switch-knob { position:absolute; top:2px; left:2px; width:18px; height:18px; border:1.5px solid var(--ink); border-radius:50%; background:#fff; }
+  .switch.on .switch-knob { left:auto; right:2px; }
+  .stepper-row { display:flex; justify-content:space-between; align-items:center; border:1.5px solid var(--ink); border-radius:12px; padding:11px 13px; background:var(--paper); }
+  .stepper { display:flex; align-items:center; gap:12px; }
+  .stepper button { width:30px; height:30px; border:1.5px solid var(--ink); border-radius:8px; background:var(--paper); font-size:16px; cursor:pointer; font-family:inherit; }
+  .stepper-val { font-size:17px; width:26px; text-align:center; }
+  .answer-select { display:flex; border:1.5px solid var(--ink); border-radius:10px; overflow:hidden; }
+  .answer-select button { flex:1; padding:10px 0; font-size:13.5px; background:var(--paper); border:none; border-left:1.5px solid var(--ink); cursor:pointer; font-family:inherit; }
+  .answer-select button:first-child { border-left:none; } .answer-select button.selected { background:var(--primary); color:#fff; }
+
+  .wizard-nav { display:none; gap:14px; padding:18px; margin-top:14px; border-top:1.5px dashed var(--ink); background:#faf9f6; }
+  .wizard-nav button { font-family:inherit; cursor:pointer; font-size:15px; border-radius:12px; }
+  .btn-back { border:1.5px solid var(--ink); background:var(--paper); padding:14px 22px; }
+  .btn-next { flex:1; background:var(--primary); color:#fff; border:1.5px solid var(--ink); padding:14px 0; }
+  .sticky-submit { display:none; margin-top:14px; padding:14px 18px; border-top:1.5px dashed var(--ink); background:#faf9f6; position:sticky; bottom:0; }
+  .sticky-submit button { width:100%; background:var(--primary); color:#fff; border:1.5px solid var(--ink); border-radius:12px; padding:15px 0; font-size:17px; cursor:pointer; font-family:inherit; }
+
+  body[data-mode="wizard"] .setting-group { display:none; }
+  body[data-mode="wizard"] .setting-group.current { display:flex; }
+  body[data-mode="wizard"] .step-chrome { display:flex; }
+  body[data-mode="wizard"] .progress-bar { display:block; }
+  body[data-mode="wizard"] .wizard-nav { display:flex; }
+  body[data-mode="wizard"] .sticky-submit { display:none; }
+  body[data-mode="full"] .setting-group { display:flex; }
+  body[data-mode="full"] .step-chrome, body[data-mode="full"] .progress-bar, body[data-mode="full"] .wizard-nav { display:none; }
+  body[data-mode="full"] .sticky-submit { display:block; }
+
+  .preview-chrome { display:flex; justify-content:space-between; align-items:center; padding:12px 18px; border-bottom:1.5px solid var(--ink); background:var(--paper); position:sticky; top:0; z-index:2; }
+  .preview-count { font-size:11px; color:var(--muted); }
+  .btn-print { background:var(--ink); color:#fff; border:none; border-radius:10px; padding:10px 18px; font-size:14px; cursor:pointer; font-family:inherit; }
+
+  .sheet-wrap { background:#e9e7e2; padding:18px; display:flex; flex-direction:column; gap:14px; }
+  .set-divider { display:flex; align-items:center; gap:8px; font-size:11px; color:#666; }
+  .set-divider .line { flex:1; height:0; border-top:1.5px dashed #999; }
+  .set-divider .tag { border:1px solid #999; border-radius:20px; padding:2px 10px; background:var(--paper); }
+  .set-divider .tag.answer-tag { background:var(--ink); color:#fff; border-color:var(--ink); }
+
+  .sheet { background:var(--paper); border:1.5px solid var(--ink); padding:16px 16px 20px; font-family:'Kiwi Maru','Hiragino Kaku Gothic ProN',serif; }
+  .sheet-head { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid var(--ink); padding-bottom:5px; }
+  .sheet-title { font-size:14px; font-weight:500; } .sheet-sub { font-size:10px; margin-top:3px; color:#333; }
+  .sheet-head-right { text-align:right; font-size:9.5px; line-height:1.9; white-space:nowrap; }
+  .sheet-time-row { display:flex; gap:16px; font-size:9.5px; margin-top:4px; padding-bottom:4px; border-bottom:1px solid var(--ink); }
+  .sheet-problems { display:flex; flex-direction:column; gap:16px; margin-top:12px; }
+  .problem { font-size:12px; break-inside:avoid; }
+  .problem-line { display:flex; align-items:baseline; gap:8px; }
+  .qtext { line-height:1.7; }
+  .qnum { display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; border:1px solid var(--ink); border-radius:50%; font-size:8.5px; flex:none; position:relative; top:1px; }
+  .figure { margin:8px 0 0 24px; }
+  .fig-svg { display:block; width:auto; max-width:100%; }
+  .choices { margin:6px 0 0 24px; display:flex; flex-direction:column; gap:3px; font-size:11.5px; line-height:1.5; }
+  .work-space { border:1px dashed var(--line); border-radius:6px; min-height:72px; margin:8px 0 0 24px; position:relative; }
+  .work-label { position:absolute; top:3px; left:6px; font-size:9px; color:var(--muted); }
+  .ans-blank { margin:7px 0 0 24px; font-size:12px; }
+  .ans-blank .blank { border-bottom:1px solid var(--ink); display:inline-block; min-width:110px; }
+  .sheet-page-num { text-align:center; font-size:8px; color:#666; margin-top:10px; }
+  .stamp-row { text-align:center; font-size:10.5px; color:#555; margin-top:8px; letter-spacing:1px; }
+  .stamp-row .stars { font-size:15px; letter-spacing:4px; margin-left:4px; }
+
+  .sheet-answers { display:flex; flex-direction:column; gap:8px; margin-top:12px; }
+  .answer-item { font-size:11px; display:flex; align-items:baseline; gap:6px; break-inside:avoid; }
+  .answer-item.answer-block { flex-direction:column; align-items:flex-start; gap:2px; }
+  .answer-line { display:flex; align-items:baseline; gap:6px; }
+  .answer-work { font-size:9.5px; color:#555; margin-left:22px; line-height:1.6; }
+
+  @media (max-width:480px){ .hero-title { font-size:22px; } }
+
+  @media print {
+    @page { size:A4; margin:12mm; }
+    html, body { background:#fff; }
+    * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+    .screen { display:none !important; } #screen-preview { display:block !important; }
+    .preview-chrome, .set-divider { display:none !important; }
+    .container { max-width:none; margin:0; width:100%; }
+    .sheet-wrap { background:#fff; padding:0; gap:0; display:block; }
+    .sheet { border:none; padding:0; page-break-after:always; } .sheet:last-child { page-break-after:avoid; }
+    .sheet-title { font-size:18px; } .sheet-sub { font-size:12px; }
+    .sheet-head-right { font-size:12px; line-height:2; }
+    .sheet-time-row { font-size:12px; gap:24px; margin-top:6px; padding-bottom:6px; }
+    .sheet-problems { gap:20px; margin-top:16px; }
+    .problem { font-size:15px; } .qtext { line-height:1.8; }
+    .qnum { width:20px; height:20px; font-size:11px; }
+    .choices { font-size:14px; margin-left:28px; }
+    .figure { margin-left:28px; }
+    .work-space { min-height:84px; margin-left:28px; } .work-label { font-size:11px; }
+    .ans-blank { font-size:15px; margin-left:28px; } .ans-blank .blank { min-width:150px; }
+    .sheet-answers { gap:12px; margin-top:14px; }
+    .answer-item { font-size:14px; } .answer-line { gap:8px; }
+    .answer-work { font-size:12px; margin-left:28px; line-height:1.7; }
+    .stamp-row { font-size:13px; margin-top:12px; } .stamp-row .stars { font-size:19px; }
+    .sheet-page-num { font-size:10px; margin-top:12px; }
+  }
+</style>
+</head>
+<body data-mode="full">
+<div class="container">
+
+  <div id="screen-setup" class="screen active">
+    <div class="topbar">
+      <span class="topbar-title">図形・グラフドリル</span>
+      <span class="topbar-sub">画面1 / 設定</span>
+    </div>
+    <div class="hero">
+      <div class="hero-title">図形・グラフドリル</div>
+      <div class="hero-sub">開智対策（新5年）の図形・グラフを、A4プリントにして紙で練習しよう</div>
+    </div>
+
+    <div class="step-chrome">
+      <span class="step-item"><span class="step-circle" data-step="1">1</span><span class="step-label" data-step="1">レベルと数</span></span>
+      <span class="step-item"><span class="step-circle" data-step="2">2</span><span class="step-label" data-step="2">単元</span></span>
+      <span class="step-item"><span class="step-circle" data-step="3">3</span><span class="step-label" data-step="3">印刷の設定</span></span>
+    </div>
+    <div class="progress-bar"><div class="progress-bar-fill" id="progress-fill"></div></div>
+
+    <div class="settings">
+      <div class="setting-group current" data-step="1">
+        <div>
+          <div class="field-label">れんしゅうレベル</div>
+          <div class="segmented">
+            <button class="level-btn" data-level="1" onclick="setLevel(1)">🌱やさしい</button>
+            <button class="level-btn" data-level="2" onclick="setLevel(2)">🌟ふつう</button>
+            <button class="level-btn" data-level="3" onclick="setLevel(3)">🔥かこもん型</button>
+          </div>
+          <div class="toggle-desc" id="level-hint" style="margin-top:7px;"></div>
+        </div>
+        <div>
+          <div class="field-label">問題数</div>
+          <div class="segmented">
+            <button class="count-btn" data-count="4" onclick="setCount(4)">4</button>
+            <button class="count-btn" data-count="6" onclick="setCount(6)">6</button>
+            <button class="count-btn" data-count="8" onclick="setCount(8)">8</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="setting-group" data-step="2">
+        <div>
+          <div class="field-label">
+            <span>単元（複数えらべる） <span id="unit-count" style="color:#aaa;"></span></span>
+            <span style="display:flex;gap:8px;">
+              <button class="pill-btn" onclick="selectAllUnits()">全選択</button>
+              <button class="pill-btn muted" onclick="deselectAllUnits()">全解除</button>
+            </span>
+          </div>
+          <div class="unit-panel" id="unit-list"></div>
+          <div class="toggle-desc" style="margin-top:7px;">選んだ単元から、毎回ちがう図・数字で出題します。</div>
+        </div>
+      </div>
+
+      <div class="setting-group" data-step="3">
+        <div>
+          <div class="field-label">プリントに入れるもの</div>
+          <div class="unit-panel">
+            <div class="check-row" onclick="toggleNameDate()"><span class="check-text" style="flex:1;">名前欄・日付欄</span><span class="switch" id="namedate-switch"><span class="switch-knob"></span></span></div>
+            <div class="check-row" onclick="toggleTime()"><span style="flex:1;"><span class="check-text">目標／実測タイム欄</span><br><span class="toggle-desc">もくひょう ◯分・かかった時間</span></span><span class="switch" id="time-switch"><span class="switch-knob"></span></span></div>
+            <div class="check-row" onclick="toggleWork()"><span style="flex:1;"><span class="check-text">式・考え方を書くスペース</span><br><span class="toggle-desc">問題の下に、あきをつくる</span></span><span class="switch" id="work-switch"><span class="switch-knob"></span></span></div>
+            <div class="check-row" onclick="toggleStamp()"><span style="flex:1;"><span class="check-text">がんばったねスタンプ欄</span><br><span class="toggle-desc">できたら色をぬる、ごほうび欄</span></span><span class="switch" id="stamp-switch"><span class="switch-knob"></span></span></div>
+            <div class="check-row" onclick="toggleExplain()"><span style="flex:1;"><span class="check-text">こたえに式・考え方をつける</span><br><span class="toggle-desc">こたえの下に、解き方をのせる</span></span><span class="switch" id="explain-switch"><span class="switch-knob"></span></span></div>
+          </div>
+        </div>
+        <div>
+          <div class="field-label">解答</div>
+          <div class="answer-select">
+            <button class="answer-btn" data-answer="none" onclick="setAnswerMode('none')">解答なし</button>
+            <button class="answer-btn" data-answer="with" onclick="setAnswerMode('with')">最終ページに追加</button>
+          </div>
+        </div>
+        <div class="stepper-row">
+          <span><span class="check-text">作成枚数</span><br><span class="toggle-desc">同じ条件で何日分つくる？</span></span>
+          <span class="stepper"><button onclick="changeSets(-1)">－</button><span class="stepper-val" id="sets-val">3</span><button onclick="changeSets(1)">＋</button></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="wizard-nav">
+      <button class="btn-back" id="btn-back" onclick="goStep(-1)">← もどる</button>
+      <button class="btn-next" id="btn-next" onclick="goStep(1)">つぎへ →</button>
+    </div>
+    <div class="sticky-submit"><button onclick="goToPreview()">プリントを作成する →</button></div>
+  </div>
+
+  <div id="screen-preview" class="screen">
+    <div class="preview-chrome">
+      <button class="link-btn" onclick="backToSetup()">← 設定に戻る</button>
+      <span class="preview-count" id="preview-count"></span>
+      <button class="btn-print" onclick="startPrint()">印刷する</button>
+    </div>
+    <div class="sheet-wrap" id="sheet-wrap"></div>
+  </div>
+</div>
+
+<script>
+// ==================== ユーティリティ ====================
+function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+function pick(arr) { return arr[rand(0, arr.length - 1)]; }
+function shuffle(arr) { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = rand(0, i); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function deg2rad(d) { return d * Math.PI / 180; }
+
+// ---- SVG ヘルパ（座標を計算して正確に描く） ----
+function fmt(n) { return (Math.round(n * 100) / 100).toString(); }
+function ptStr(p) { return `${fmt(p.x)},${fmt(p.y)}`; }
+function viewBoxOf(points, pad) {
+  const xs = points.map(p => p.x), ys = points.map(p => p.y);
+  const minx = Math.min(...xs) - pad, miny = Math.min(...ys) - pad;
+  const maxx = Math.max(...xs) + pad, maxy = Math.max(...ys) + pad;
+  return { vb: `${fmt(minx)} ${fmt(miny)} ${fmt(maxx - minx)} ${fmt(maxy - miny)}`, w: maxx - minx, h: maxy - miny };
+}
+function svgWrap(inner, points, pad, pxWidth) {
+  const { vb, w, h } = viewBoxOf(points, pad);
+  const width = pxWidth || Math.min(300, Math.max(150, w));
+  const height = width * h / w;
+  return `<svg class="fig-svg" viewBox="${vb}" width="${fmt(width)}" height="${fmt(height)}" xmlns="http://www.w3.org/2000/svg" font-family="'Kiwi Maru',sans-serif">${inner}</svg>`;
+}
+function unit(a, b) { const dx = b.x - a.x, dy = b.y - a.y, L = Math.hypot(dx, dy); return { x: dx / L, y: dy / L }; }
+function add(p, v, s) { return { x: p.x + v.x * s, y: p.y + v.y * s }; }
+// 直角マーク（頂点 o で、辺 o→a と o→b の間）
+function rightAngleMark(o, a, b, size) {
+  const ua = unit(o, a), ub = unit(o, b);
+  const p1 = add(o, ua, size), p3 = add(o, ub, size), p2 = { x: p1.x + ub.x * size, y: p1.y + ub.y * size };
+  return `<polyline points="${ptStr(p1)} ${ptStr(p2)} ${ptStr(p3)}" fill="none" stroke="#1a1a1a" stroke-width="1"/>`;
+}
+// 角の弧（頂点 v で v→a から v→b へ）＋ラベル
+function angleArc(v, a, b, r, label) {
+  const ua = unit(v, a), ub = unit(v, b);
+  const p1 = add(v, ua, r), p2 = add(v, ub, r);
+  const cross = ua.x * ub.y - ua.y * ub.x; // 時計回り判定（y下向き座標）
+  const sweep = cross < 0 ? 1 : 0;
+  const path = `<path d="M ${ptStr(p1)} A ${fmt(r)} ${fmt(r)} 0 0 ${sweep} ${ptStr(p2)}" fill="none" stroke="#2a78d6" stroke-width="1.3"/>`;
+  let txt = '';
+  if (label) {
+    let bis = { x: ua.x + ub.x, y: ua.y + ub.y }; const bl = Math.hypot(bis.x, bis.y) || 1; bis = { x: bis.x / bl, y: bis.y / bl };
+    const lp = add(v, bis, r + 12);
+    txt = `<text x="${fmt(lp.x)}" y="${fmt(lp.y)}" font-size="13" fill="#2a78d6" text-anchor="middle" dominant-baseline="middle">${label}</text>`;
+  }
+  return path + txt;
+}
+function label(p, text, color) {
+  return `<text x="${fmt(p.x)}" y="${fmt(p.y)}" font-size="11" fill="${color || '#1a1a1a'}" text-anchor="middle" dominant-baseline="middle">${text}</text>`;
+}
+
+// ==================== 単元：Z1 三角定規の角 ====================
+// 縦の辺 O(下)→V(上) を2枚の三角定規で共有。左=45-45-90、右=30-60-90。
+// Vにできる角あ ＝ 45° ＋ (30 or 60)°。直角マークと足もとの角を手がかりに解く。
+function makeZ1(level) {
+  const topB = pick([30, 60]);            // 右の三角定規の、V での角
+  const footB = 90 - topB;                // 右の三角定規の、足もとの角
+  const mirror = Math.random() < 0.5;
+  const h = 150;
+  let O = { x: 0, y: 0 }, V = { x: 0, y: -h }, AL = { x: -h, y: 0 };
+  const w = h * Math.tan(deg2rad(topB));
+  let BR = { x: w, y: 0 };
+  let pts = { O, V, AL, BR };
+  if (mirror) for (const k in pts) pts[k] = { x: -pts[k].x, y: pts[k].y };
+  O = pts.O; V = pts.V; AL = pts.AL; BR = pts.BR;
+  const ans = 45 + topB;
+
+  const triA = `<polygon points="${ptStr(O)} ${ptStr(V)} ${ptStr(AL)}" fill="#eef4fb" stroke="#1a1a1a" stroke-width="1.5"/>`;
+  const triB = `<polygon points="${ptStr(O)} ${ptStr(V)} ${ptStr(BR)}" fill="#fbefe9" stroke="#1a1a1a" stroke-width="1.5"/>`;
+  const marks = rightAngleMark(O, AL, V, 12) + rightAngleMark(O, BR, V, 12);
+  const arc = angleArc(V, AL, BR, 26, 'あ');
+  // 足もとの角ラベル（内側に寄せる）
+  const labA = label(add(AL, unit(AL, O), 26), '45°');
+  const labB = label(add(BR, unit(BR, O), 26), footB + '°');
+  const fig = svgWrap(triA + triB + marks + arc + labA + labB, [O, V, AL, BR], 26, 240);
+
+  return {
+    fig,
+    question: '2まいの三角じょうぎを、図のように重ねました。角 あ の大きさは何度ですか。',
+    answer: `${ans}度`,
+    work: `三角形の内角の和は180°。<br>左の三角じょうぎの上の角 ＝ 180－90－45 ＝ 45°<br>右の三角じょうぎの上の角 ＝ 180－90－${footB} ＝ ${topB}°<br>角あ ＝ 45° ＋ ${topB}° ＝ ${ans}°`,
+    blanks: 1,
+  };
+}
+
+// ==================== 単元定義 ====================
+const UNIT_DEFS = [
+  { key: 'Z1', label: 'Z1 三角定規の角', sub: '2枚の三角定規でできる角をもとめる', gen: makeZ1 },
+];
+function unitDef(key) { return UNIT_DEFS.find(u => u.key === key); }
+
+const LEVEL_LABELS = { 1: '🌱やさしい', 2: '🌟ふつう', 3: '🔥かこもん型' };
+const LEVEL_HINTS = {
+  1: '図をよく見て、わかっている角に印をつけよう。',
+  2: '三角形の内角の和は180°。使える角をさがそう。',
+  3: '開智の過去問と同じくらいの むずかしさ。',
+};
+
+// ==================== 状態 ====================
+let state = {
+  units: new Set(['Z1']),
+  level: 2, count: 6,
+  showNameDate: true, showTime: true, showWork: true, showStamp: true, showExplain: true,
+  answerMode: 'with', sets: 3, step: 1,
+};
+let generatedSets = [];
+
+// ==================== 操作ハンドラ ====================
+function toggleUnit(key) { if (state.units.has(key)) state.units.delete(key); else state.units.add(key); renderUnitCheckboxes(); renderAll(); saveSettings(); }
+function selectAllUnits() { UNIT_DEFS.forEach(u => state.units.add(u.key)); renderUnitCheckboxes(); renderAll(); saveSettings(); }
+function deselectAllUnits() { state.units.clear(); renderUnitCheckboxes(); renderAll(); saveSettings(); }
+function setLevel(n) { state.level = n; renderAll(); saveSettings(); }
+function setCount(n) { state.count = n; renderAll(); saveSettings(); }
+function toggleNameDate() { state.showNameDate = !state.showNameDate; renderAll(); saveSettings(); }
+function toggleTime() { state.showTime = !state.showTime; renderAll(); saveSettings(); }
+function toggleWork() { state.showWork = !state.showWork; renderAll(); saveSettings(); }
+function toggleStamp() { state.showStamp = !state.showStamp; renderAll(); saveSettings(); }
+function toggleExplain() { state.showExplain = !state.showExplain; renderAll(); saveSettings(); }
+function setAnswerMode(mode) { state.answerMode = mode; renderAll(); saveSettings(); }
+function changeSets(delta) { state.sets = Math.min(5, Math.max(1, state.sets + delta)); renderAll(); saveSettings(); }
+
+// ==================== 設定画面レンダリング ====================
+function renderUnitCheckboxes() {
+  const wrap = document.getElementById('unit-list');
+  wrap.innerHTML = UNIT_DEFS.map(u => {
+    const checked = state.units.has(u.key);
+    return `<div class="check-row" onclick="toggleUnit('${u.key}')">
+      <span class="checkbox ${checked ? 'checked' : ''}">${checked ? '✓' : ''}</span>
+      <span style="flex:1;"><span class="check-text">${u.label}</span><br><span class="check-sub">${u.sub}</span></span>
+    </div>`;
+  }).join('');
+  document.getElementById('unit-count').textContent = `${state.units.size}つ選択中`;
+}
+function renderAll() {
+  document.querySelectorAll('.level-btn').forEach(b => b.classList.toggle('selected', Number(b.dataset.level) === state.level));
+  document.getElementById('level-hint').textContent = LEVEL_HINTS[state.level];
+  document.querySelectorAll('.count-btn').forEach(b => b.classList.toggle('selected', Number(b.dataset.count) === state.count));
+  setSwitch('namedate-switch', state.showNameDate); setSwitch('time-switch', state.showTime);
+  setSwitch('work-switch', state.showWork); setSwitch('stamp-switch', state.showStamp); setSwitch('explain-switch', state.showExplain);
+  document.querySelectorAll('.answer-btn').forEach(b => b.classList.toggle('selected', b.dataset.answer === state.answerMode));
+  document.getElementById('sets-val').textContent = state.sets;
+}
+function setSwitch(id, on) { document.getElementById(id).classList.toggle('on', on); }
+
+// ==================== レスポンシブ ====================
+const mq = window.matchMedia('(min-width: 768px)');
+function applyResponsiveMode() { document.body.dataset.mode = mq.matches ? 'full' : 'wizard'; if (!mq.matches) state.step = 1; renderStepChrome(); }
+mq.addEventListener('change', applyResponsiveMode);
+function renderStepChrome() {
+  for (let i = 1; i <= 3; i++) {
+    document.querySelector(`.setting-group[data-step="${i}"]`).classList.toggle('current', i === state.step);
+    const circle = document.querySelector(`.step-circle[data-step="${i}"]`), lab = document.querySelector(`.step-label[data-step="${i}"]`);
+    circle.classList.toggle('active', i === state.step); circle.classList.toggle('done', i < state.step);
+    circle.textContent = i < state.step ? '✓' : String(i); lab.classList.toggle('active', i === state.step);
+  }
+  document.getElementById('progress-fill').style.width = `${(state.step / 3) * 100}%`;
+  document.getElementById('btn-back').style.visibility = state.step > 1 ? 'visible' : 'hidden';
+  document.getElementById('btn-next').textContent = state.step < 3 ? 'つぎへ →' : 'プリントを作成する →';
+}
+function goStep(delta) { if (state.step === 3 && delta > 0) { goToPreview(); return; } state.step = Math.min(3, Math.max(1, state.step + delta)); renderStepChrome(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+
+// ==================== 印刷データ生成 ====================
+function generateProblems(count) {
+  const pool = state.units.size ? Array.from(state.units) : ['Z1'];
+  const problems = [];
+  for (let i = 0; i < count; i++) problems.push(unitDef(pool[rand(0, pool.length - 1)]).gen(state.level));
+  return problems;
+}
+function buildSheets() { generatedSets = []; for (let s = 1; s <= state.sets; s++) generatedSets.push({ problems: generateProblems(state.count) }); }
+
+// ==================== プレビューHTML構築 ====================
+function circleTag(n) { return `<span class="qnum">${n}</span>`; }
+function gradeLabel() { return '開智対策（新5年）'; }
+function unitTitleForSet() {
+  const u = Array.from(state.units);
+  if (u.length === 0) return '図形・グラフ';
+  if (u.length > 1) return `図形・グラフ ミックス（${u.length}単元）`;
+  return unitDef(u[0]).label;
+}
+function renderNameDateBlock() { return state.showNameDate ? `<div class="sheet-head-right"><div>なまえ　＿＿＿＿＿＿＿＿</div><div>日づけ　＿＿月＿＿日</div></div>` : ''; }
+function renderTimeRow() { return state.showTime ? `<div class="sheet-time-row"><span>もくひょう　＿＿分</span><span>かかった時間　＿＿分＿＿秒</span></div>` : ''; }
+function renderStampBox() { return state.showStamp ? `<div class="stamp-row">がんばったね！できたら色をぬろう<span class="stars">☆ ☆ ☆</span></div>` : ''; }
+function ansBlanks(n) {
+  if (n >= 2) return `<div class="ans-blank">(1) 答え <span class="blank"></span>　(2) 答え <span class="blank"></span></div>`;
+  return `<div class="ans-blank">答え <span class="blank"></span></div>`;
+}
+function buildProblemSheetHtml(setIndex, problems, pageNo, totalPages) {
+  return `<div class="sheet">
+    <div class="sheet-head">
+      <div><div class="sheet-title">${unitTitleForSet()}</div><div class="sheet-sub">${gradeLabel()} ／ ${setIndex}日目 ／ ${LEVEL_LABELS[state.level]}</div></div>
+      ${renderNameDateBlock()}
+    </div>
+    ${renderTimeRow()}
+    <div class="sheet-problems">
+      ${problems.map((p, i) => {
+        const line = `<div class="problem-line">${circleTag(i + 1)}<span class="qtext">${p.question}</span></div>`;
+        const figure = p.fig ? `<div class="figure">${p.fig}</div>` : '';
+        const choices = p.choices ? `<div class="choices">${p.choices}</div>` : '';
+        const work = state.showWork ? `<div class="work-space"><span class="work-label">しき・考え方</span></div>` : '';
+        return `<div class="problem">${line}${figure}${choices}${work}${ansBlanks(p.blanks)}</div>`;
+      }).join('')}
+    </div>
+    ${renderStampBox()}
+    <div class="sheet-page-num">— ${pageNo} / ${totalPages} —</div>
+  </div>`;
+}
+function buildAnswerHtml(setIndex, problems) {
+  const showWork = state.showExplain;
+  return `<div class="sheet">
+    <div class="sheet-head"><div class="sheet-title">こたえ（${setIndex}日目）</div></div>
+    <div class="sheet-answers">
+      ${problems.map((p, i) => {
+        if (!showWork) return `<div class="answer-item">${circleTag(i + 1)}<span>${p.answer}</span></div>`;
+        const workHtml = p.work ? `<div class="answer-work">${p.work}</div>` : '';
+        return `<div class="answer-item answer-block"><div class="answer-line">${circleTag(i + 1)}<span>${p.answer}</span></div>${workHtml}</div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+function renderPreview() {
+  const totalPages = state.sets + (state.answerMode === 'with' ? state.sets : 0);
+  let html = '';
+  generatedSets.forEach((set, idx) => {
+    const setIndex = idx + 1;
+    if (setIndex > 1) html += `<div class="set-divider"><span class="line"></span><span class="tag">セット${setIndex}（${setIndex}日目）</span><span class="line"></span></div>`;
+    html += buildProblemSheetHtml(setIndex, set.problems, setIndex, totalPages);
+  });
+  if (state.answerMode === 'with') {
+    html += `<div class="set-divider"><span class="line"></span><span class="tag answer-tag">こたえ</span><span class="line"></span></div>`;
+    generatedSets.forEach((set, idx) => { html += buildAnswerHtml(idx + 1, set.problems); });
+  }
+  document.getElementById('sheet-wrap').innerHTML = html;
+  document.getElementById('preview-count').textContent = `全${totalPages}ページ（${state.sets}セット${state.answerMode === 'with' ? '＋こたえ' : ''}）`;
+}
+
+// ==================== 画面遷移 ====================
+function showScreen(name) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById('screen-' + name).classList.add('active'); window.scrollTo(0, 0); }
+function goToPreview() { if (state.units.size === 0) { alert('単元を1つ以上えらんでください'); return; } buildSheets(); renderPreview(); showScreen('preview'); }
+function backToSetup() { showScreen('setup'); }
+function startPrint() { window.print(); }
+
+// ==================== 設定の保存・復元 ====================
+const SETTINGS_KEY = 'zukei_print_settings';
+function saveSettings() {
+  const toSave = { units: Array.from(state.units), level: state.level, count: state.count,
+    showNameDate: state.showNameDate, showTime: state.showTime, showWork: state.showWork,
+    showStamp: state.showStamp, showExplain: state.showExplain, answerMode: state.answerMode, sets: state.sets };
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(toSave)); } catch (e) {}
+}
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY); if (!raw) return;
+    const s = JSON.parse(raw); const valid = UNIT_DEFS.map(u => u.key);
+    const units = Array.isArray(s.units) ? s.units.filter(k => valid.includes(k)) : [];
+    state.units = new Set(units.length ? units : valid);
+    state.level = [1, 2, 3].includes(s.level) ? s.level : 2;
+    state.count = [4, 6, 8].includes(s.count) ? s.count : 6;
+    state.showNameDate = s.showNameDate !== false; state.showTime = s.showTime !== false;
+    state.showWork = s.showWork !== false; state.showStamp = s.showStamp !== false; state.showExplain = s.showExplain !== false;
+    state.answerMode = s.answerMode === 'none' ? 'none' : 'with';
+    state.sets = Math.min(5, Math.max(1, s.sets || 3));
+  } catch (e) {}
+}
+
+// ==================== 初期化 ====================
+(function init() { loadSettings(); applyResponsiveMode(); renderUnitCheckboxes(); renderAll(); })();
+</script>
+</body>
+</html>
