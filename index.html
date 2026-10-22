@@ -586,12 +586,88 @@ function makeZ3(level) {
   });
 }
 
+// ==================== 単元：Z7 道幅を寄せる ====================
+function makeZ7(level) {
+  const big = level === 3;
+  let W = rand(big ? 12 : 8, big ? 20 : 14), H = rand(big ? 9 : 6, big ? 16 : 11), w = rand(2, 4);
+  if (w >= W - 2) w = 2; if (w >= H - 2) w = 2;
+  const area = (W - w) * (H - w);
+  const sc = 150 / Math.max(W, H), Wp = W * sc, Hp = H * sc, wp = w * sc;
+  const rx = Wp * 0.42, ry = Hp * 0.4;
+  const g = `<rect x="0" y="0" width="${fmt(Wp)}" height="${fmt(Hp)}" fill="#eef4fb" stroke="none"/>`
+    + `<rect x="${fmt(rx)}" y="0" width="${fmt(wp)}" height="${fmt(Hp)}" fill="#d9d9d9" stroke="none"/>`
+    + `<rect x="0" y="${fmt(ry)}" width="${fmt(Wp)}" height="${fmt(wp)}" fill="#d9d9d9" stroke="none"/>`
+    + `<rect x="0" y="0" width="${fmt(Wp)}" height="${fmt(Hp)}" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>`
+    + label({ x: Wp / 2, y: Hp + 15 }, `${W}cm`) + label({ x: -16, y: Hp / 2 }, `${H}cm`)
+    + label({ x: rx + wp / 2, y: -8 }, `道のはば${w}cm`, '#555');
+  const fig = svgWrap(g, [{ x: -22, y: -14 }, { x: Wp + 6, y: Hp + 18 }], 6, 240);
+  return {
+    fig, question: '下の長方形の土地から、同じはばの道をのぞいた のこりの面積は何cm²ですか。',
+    answer: `${area}cm²`,
+    work: `道を はしに寄せると、のこりは たて(${H}－${w}) × よこ(${W}－${w}) の長方形になる。<br>(${W}－${w}) × (${H}－${w}) ＝ ${W - w} × ${H - w} ＝ ${area}（cm²）`, blanks: 1,
+  };
+}
+
+// ==================== 単元：Z8 等積変形 ====================
+function makeZ8(level) {
+  const big = level === 3;
+  let b = rand(big ? 8 : 6, big ? 16 : 12), h = rand(big ? 6 : 4, big ? 12 : 8); if ((b * h) % 2) h++;
+  const area = b * h / 2, sc = 150 / Math.max(b, h), B = b * sc, Hh = h * sc, xo = 24;
+  const B1 = { x: xo, y: Hh }, C1 = { x: xo + B, y: Hh };
+  const ax = xo + B * 0.28, dx = xo + B * 0.96;
+  const g = `<line x1="0" y1="0" x2="${fmt(B + 72)}" y2="0" stroke="#1a1a1a" stroke-width="1.3"/>`
+    + `<line x1="0" y1="${fmt(Hh)}" x2="${fmt(B + 72)}" y2="${fmt(Hh)}" stroke="#1a1a1a" stroke-width="1.3"/>`
+    + parallelMark({ x: B + 50, y: 0 }, { x: 1, y: 0 }) + parallelMark({ x: B + 50, y: Hh }, { x: 1, y: 0 })
+    + `<line x1="${fmt(ax)}" y1="0" x2="${fmt(ax)}" y2="${fmt(Hh)}" stroke="#2a78d6" stroke-width="0.8" stroke-dasharray="3 3"/>`
+    + `<polygon points="${ptStr(B1)} ${ptStr(C1)} ${ptStr({ x: dx, y: 0 })}" fill="none" stroke="#e06a2a" stroke-width="1.4" stroke-dasharray="5 3"/>`
+    + `<polygon points="${ptStr(B1)} ${ptStr(C1)} ${ptStr({ x: ax, y: 0 })}" fill="#e7f0fb" stroke="#2a78d6" stroke-width="1.5"/>`
+    + label({ x: ax, y: -8 }, 'ア', '#2a78d6') + label({ x: dx, y: -8 }, 'イ', '#e06a2a')
+    + label({ x: xo + B / 2, y: Hh + 15 }, `${b}cm`) + label({ x: ax - 20, y: Hh / 2 }, `高さ${h}cm`, '#555');
+  const fig = svgWrap(g, [{ x: -20, y: -13 }, { x: B + 72, y: Hh + 18 }], 6, 250);
+  return {
+    fig, question: '下の図で、上と下の直線は平行です。三角形イの面積は何cm²ですか。',
+    answer: `${area}cm²`,
+    work: `アの面積 ＝ 底辺 × 高さ ÷ 2 ＝ ${b} × ${h} ÷ 2 ＝ ${area}cm²。<br>イはアと底辺が同じで、同じ平行線の間にあり高さが等しいので、面積はアと同じ。<br>イ ＝ ${area}cm²`, blanks: 1,
+  };
+}
+
+// ==================== 単元：Z4 折り返しの角 ====================
+function reflectPt(P, A, B) {
+  const dx = B.x - A.x, dy = B.y - A.y, L2 = dx * dx + dy * dy;
+  const t = ((P.x - A.x) * dx + (P.y - A.y) * dy) / L2, pr = { x: A.x + t * dx, y: A.y + t * dy };
+  return { x: 2 * pr.x - P.x, y: 2 * pr.y - P.y };
+}
+function makeZ4(level) {
+  return retry(() => {
+    const a = level === 1 ? rand(25, 40) : rand(25, 55), ans = 180 - 2 * a;
+    const Wp = 185, Hp = 120, fb = 72;
+    const E = { x: Wp - fb, y: Hp }, fy = Hp - fb * Math.tan(deg2rad(a)), F = { x: Wp, y: fy };
+    if (fy < 10) return null;
+    const Bc = { x: Wp, y: Hp }, Bp = reflectPt(Bc, E, F);
+    const pent = `<polygon points="0,0 ${fmt(Wp)},0 ${ptStr(F)} ${ptStr(E)} 0,${fmt(Hp)}" fill="#f4f6f8" stroke="#1a1a1a" stroke-width="1.4"/>`;
+    const flap = `<polygon points="${ptStr(E)} ${ptStr(Bp)} ${ptStr(F)}" fill="#e7f0fb" stroke="#1a1a1a" stroke-width="1.4"/>`;
+    const orig = `<line x1="${fmt(E.x)}" y1="${fmt(E.y)}" x2="${fmt(Bc.x)}" y2="${fmt(Bc.y)}" stroke="#aaa" stroke-width="1" stroke-dasharray="4 3"/>`
+      + `<line x1="${fmt(F.x)}" y1="${fmt(F.y)}" x2="${fmt(Bc.x)}" y2="${fmt(Bc.y)}" stroke="#aaa" stroke-width="1" stroke-dasharray="4 3"/>`;
+    const aArc = angleArc(E, Bc, F, 14, a + '°') + angleArc(E, F, Bp, 22, a + '°');
+    const ahArc = angleArc(E, Bp, { x: E.x - 40, y: Hp }, 32, 'あ');
+    const fig = svgWrap(orig + pent + flap + aArc + ahArc, [{ x: -6, y: -6 }, { x: Wp + 8, y: Hp + 10 }, Bp], 12, 250);
+    return {
+      fig, question: '長方形の紙を、図のように 角を1つ 折り返しました。角 あ の大きさは何度ですか。（点線はもとの紙）',
+      answer: `${ans}度`,
+      work: `折り返した角は もとの角と等しいので、折り目の左右は どちらも ${a}°。<br>下の辺は 一直線だから、あ ＝ 180 － ${a} － ${a} ＝ ${ans}°`, blanks: 1,
+    };
+  });
+}
+
 // ==================== 単元定義 ====================
 const UNIT_DEFS = [
   { key: 'Z1', label: 'Z1 三角定規の角', sub: '2枚の三角定規でできる角をもとめる', gen: makeZ1 },
   { key: 'Z2', label: 'Z2 多角形の内角の和', sub: '四角形・五角形・六角形の角をもとめる', gen: makeZ2 },
   { key: 'Z3', label: 'Z3 平行線と角', sub: '同位角・錯角・ジグザグの角をもとめる', gen: makeZ3 },
+  { key: 'Z4', label: 'Z4 折り返しの角', sub: '紙を折り返してできる角をもとめる', gen: makeZ4 },
   { key: 'Z6', label: 'Z6 面積', sub: '三角形・平行四辺形・台形・ひし形の面積', gen: makeZ6 },
+  { key: 'Z7', label: 'Z7 道幅を寄せる', sub: '長方形から道をのぞいた面積', gen: makeZ7 },
+  { key: 'Z8', label: 'Z8 等積変形', sub: '底辺と高さが同じ三角形は面積が等しい', gen: makeZ8 },
   { key: 'Z5', label: 'Z5 四角形の性質', sub: '平行四辺形・長方形・ひし形・正方形の性質', gen: makeZ5 },
   { key: 'G1', label: 'G1 折れ線グラフ', sub: 'グラフを読む・変化の大きさをつかむ', gen: makeG1 },
   { key: 'G2', label: 'G2 グラフの使い分け', sub: '折れ線グラフ・棒グラフのえらび方', gen: makeG2 },
@@ -607,7 +683,7 @@ const LEVEL_HINTS = {
 
 // ==================== 状態 ====================
 let state = {
-  units: new Set(['Z1', 'Z2', 'Z3', 'Z5', 'Z6', 'G1', 'G2']),
+  units: new Set(['Z1', 'Z2', 'Z3', 'Z4', 'Z5', 'Z6', 'Z7', 'Z8', 'G1', 'G2']),
   level: 2, count: 6,
   showNameDate: true, showTime: true, showWork: true, showStamp: true, showExplain: true,
   answerMode: 'with', sets: 3, step: 1,
