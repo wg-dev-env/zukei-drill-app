@@ -535,10 +535,62 @@ function makeZ6(level) {
   return { fig, question, answer, work, blanks: 1 };
 }
 
+// ==================== 単元：Z3 平行線と角 ====================
+// 平行マーク（小さな「>」）
+function parallelMark(p, dir) {
+  const perp = { x: -dir.y, y: dir.x };
+  const bu = add(add(p, dir, -4), perp, 4), tip = add(p, dir, 4), bl = add(add(p, dir, -4), perp, -4);
+  return `<polyline points="${ptStr(bu)} ${ptStr(tip)} ${ptStr(bl)}" fill="none" stroke="#1a1a1a" stroke-width="1.2"/>`;
+}
+function makeZ3(level) {
+  return retry(() => {
+    // L3の7割は過去問型のジグザグ、それ以外は平行線＋1本の横断線
+    if (level >= 3 && Math.random() < 0.7) {
+      const al = rand(25, 55), be = rand(25, 55), T = 50, Bt = 160, P = { x: 85, y: 102 };
+      const A = { x: 85 + 52 / Math.tan(deg2rad(al)), y: T }, C = { x: 85 + 58 / Math.tan(deg2rad(be)), y: Bt };
+      const Lv = { x: -1, y: 0 };
+      const lines = `<line x1="25" y1="${T}" x2="250" y2="${T}" stroke="#1a1a1a" stroke-width="1.5"/>`
+        + `<line x1="25" y1="${Bt}" x2="250" y2="${Bt}" stroke="#1a1a1a" stroke-width="1.5"/>`;
+      const segs = `<line x1="${fmt(A.x)}" y1="${T}" x2="${fmt(P.x)}" y2="${fmt(P.y)}" stroke="#1a1a1a" stroke-width="1.5"/>`
+        + `<line x1="${fmt(P.x)}" y1="${fmt(P.y)}" x2="${fmt(C.x)}" y2="${Bt}" stroke="#1a1a1a" stroke-width="1.5"/>`;
+      const pm = parallelMark({ x: 210, y: T }, { x: 1, y: 0 }) + parallelMark({ x: 210, y: Bt }, { x: 1, y: 0 });
+      const arcs = angleArc(A, add(A, Lv, 30), P, 15, al + '°') + angleArc(C, add(C, Lv, 30), P, 15, be + '°') + angleArc(P, A, C, 16, 'あ');
+      const fig = svgWrap(lines + segs + pm + arcs, [{ x: 25, y: T - 12 }, { x: 250, y: Bt + 12 }, P, A, C], 14, 290);
+      return {
+        fig, question: '下の図で、上と下の直線は平行です。角 あ の大きさは何度ですか。',
+        answer: `${al + be}度`,
+        work: `角の点を通り、2直線に平行な線をひく。<br>錯角より、あ ＝ ${al}° ＋ ${be}° ＝ ${al + be}°`, blanks: 1,
+      };
+    }
+    // 平行線＋1本の横断線
+    const th = rand(35, 70), T = 55, Bt = 155;
+    const Pb = { x: 95, y: Bt }, Pt = { x: 95 + 100 / Math.tan(deg2rad(th)), y: T };
+    const R = { x: 1, y: 0 }, Lv = { x: -1, y: 0 };
+    const up = { x: Math.cos(deg2rad(th)), y: -Math.sin(deg2rad(th)) }, dn = { x: -Math.cos(deg2rad(th)), y: Math.sin(deg2rad(th)) };
+    const tv1 = add(Pb, dn, 42), tv2 = add(Pt, up, 42);
+    const lines = `<line x1="25" y1="${T}" x2="255" y2="${T}" stroke="#1a1a1a" stroke-width="1.5"/>`
+      + `<line x1="25" y1="${Bt}" x2="255" y2="${Bt}" stroke="#1a1a1a" stroke-width="1.5"/>`
+      + `<line x1="${fmt(tv1.x)}" y1="${fmt(tv1.y)}" x2="${fmt(tv2.x)}" y2="${fmt(tv2.y)}" stroke="#1a1a1a" stroke-width="1.5"/>`;
+    const pm = parallelMark({ x: 45, y: T }, R) + parallelMark({ x: 45, y: Bt }, R);
+    const PtR = add(Pt, R, 40), PtL = add(Pt, Lv, 40), PtUp = add(Pt, up, 40), PtDn = add(Pt, dn, 40);
+    const PbR = add(Pb, R, 40), PbUp = add(Pb, up, 40);
+    const ahArc = angleArc(Pb, PbR, PbUp, 17, 'あ');
+    const rel = level === 1 ? pick(['corr', 'alt']) : pick(['corr', 'alt', 'coint']);
+    let g, ans, givenArc, name;
+    if (rel === 'corr') { g = th; ans = th; givenArc = angleArc(Pt, PtR, PtUp, 17, g + '°'); name = '同位角は等しい'; }
+    else if (rel === 'alt') { g = th; ans = th; givenArc = angleArc(Pt, PtL, PtDn, 17, g + '°'); name = '錯角は等しい'; }
+    else { g = 180 - th; ans = th; givenArc = angleArc(Pt, PtR, PtDn, 17, g + '°'); name = '同じ側の内角の和は180°'; }
+    const fig = svgWrap(lines + pm + givenArc + ahArc, [{ x: 25, y: T - 12 }, { x: 255, y: Bt + 12 }, tv1, tv2], 14, 290);
+    const work = rel === 'coint' ? `平行な2直線で、${name}。<br>あ ＝ 180 － ${g} ＝ ${ans}°` : `平行な2直線で、${name}。<br>あ ＝ ${g}° と等しい。`;
+    return { fig, question: '下の図で、上と下の直線は平行です。角 あ の大きさは何度ですか。', answer: `${ans}度`, work, blanks: 1 };
+  });
+}
+
 // ==================== 単元定義 ====================
 const UNIT_DEFS = [
   { key: 'Z1', label: 'Z1 三角定規の角', sub: '2枚の三角定規でできる角をもとめる', gen: makeZ1 },
   { key: 'Z2', label: 'Z2 多角形の内角の和', sub: '四角形・五角形・六角形の角をもとめる', gen: makeZ2 },
+  { key: 'Z3', label: 'Z3 平行線と角', sub: '同位角・錯角・ジグザグの角をもとめる', gen: makeZ3 },
   { key: 'Z6', label: 'Z6 面積', sub: '三角形・平行四辺形・台形・ひし形の面積', gen: makeZ6 },
   { key: 'Z5', label: 'Z5 四角形の性質', sub: '平行四辺形・長方形・ひし形・正方形の性質', gen: makeZ5 },
   { key: 'G1', label: 'G1 折れ線グラフ', sub: 'グラフを読む・変化の大きさをつかむ', gen: makeG1 },
@@ -555,7 +607,7 @@ const LEVEL_HINTS = {
 
 // ==================== 状態 ====================
 let state = {
-  units: new Set(['Z1', 'Z2', 'Z5', 'Z6', 'G1', 'G2']),
+  units: new Set(['Z1', 'Z2', 'Z3', 'Z5', 'Z6', 'G1', 'G2']),
   level: 2, count: 6,
   showNameDate: true, showTime: true, showWork: true, showStamp: true, showExplain: true,
   answerMode: 'with', sets: 3, step: 1,
