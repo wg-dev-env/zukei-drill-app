@@ -420,9 +420,74 @@ function makeG2(level) {
   };
 }
 
+// ==================== 単元：Z2 多角形の内角の和 ====================
+// 外角（合計360°）を整数で決め、辺の長さを解いて閉じる凸多角形をつくる。
+// 内角は 180－外角 で整数。n-1個の角を示し、残りの角あ＝180×(n-2)－（示した角の和）。
+function genExterior(n) {
+  for (let t = 0; t < 400; t++) {
+    const e = []; for (let i = 0; i < n - 1; i++) e.push(rand(35, 95));
+    const last = 360 - e.reduce((a, b) => a + b, 0);
+    if (last >= 35 && last <= 95) { e.push(last); return e; }
+  }
+  return null;
+}
+function polyFromExterior(ext) {
+  const n = ext.length; let ang = 0; const dirs = [];
+  for (let i = 0; i < n; i++) { dirs.push({ x: Math.cos(deg2rad(ang)), y: Math.sin(deg2rad(ang)) }); ang += ext[i]; }
+  const R = { x: 0, y: 0 }; dirs.forEach(d => { R.x += d.x; R.y += d.y; });
+  let Mxx = 0, Mxy = 0, Myy = 0; dirs.forEach(d => { Mxx += d.x * d.x; Mxy += d.x * d.y; Myy += d.y * d.y; });
+  const det = Mxx * Myy - Mxy * Mxy; if (Math.abs(det) < 1e-6) return null;
+  const a = (-R.x * Myy + R.y * Mxy) / det, b = (-R.y * Mxx + R.x * Mxy) / det;
+  const L = dirs.map(d => 1 + a * d.x + b * d.y); if (L.some(l => l <= 0.2)) return null;
+  const pts = [{ x: 0, y: 0 }];
+  for (let i = 0; i < n - 1; i++) pts.push({ x: pts[i].x + L[i] * dirs[i].x, y: pts[i].y + L[i] * dirs[i].y });
+  return pts;
+}
+function interiorAngle(pts, i) {
+  const n = pts.length, V = pts[i], P = pts[(i - 1 + n) % n], N = pts[(i + 1) % n];
+  const a = unit(V, P), b = unit(V, N);
+  return Math.acos(Math.max(-1, Math.min(1, a.x * b.x + a.y * b.y))) * 180 / Math.PI;
+}
+function makeZ2(level) {
+  const n = level === 1 ? 4 : level === 2 ? 5 : pick([5, 6]);
+  const nName = { 4: '四角形', 5: '五角形', 6: '六角形' }[n];
+  return retry(() => {
+    const ext = genExterior(n); if (!ext) return null;
+    let pts = polyFromExterior(ext); if (!pts) return null;
+    const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
+    const s = 170 / Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
+    pts = pts.map(p => ({ x: p.x * s, y: p.y * s }));
+    const angs = pts.map((_, i) => Math.round(interiorAngle(pts, i)));
+    if (angs.reduce((a, b) => a + b, 0) !== 180 * (n - 2)) return null;
+    if (angs.some(a => a < 25 || a > 160)) return null;
+    const aIdx = rand(0, n - 1);
+    const others = angs.filter((_, i) => i !== aIdx);
+    const poly = `<polygon points="${pts.map(ptStr).join(' ')}" fill="#eef4fb" stroke="#1a1a1a" stroke-width="1.5"/>`;
+    let marks = '';
+    for (let i = 0; i < n; i++) {
+      const V = pts[i], P = pts[(i - 1 + n) % n], N = pts[(i + 1) % n];
+      if (i === aIdx) { marks += angleArc(V, P, N, 18, 'あ'); }
+      else {
+        let bis = { x: unit(V, P).x + unit(V, N).x, y: unit(V, P).y + unit(V, N).y };
+        const bl = Math.hypot(bis.x, bis.y) || 1; bis = { x: bis.x / bl, y: bis.y / bl };
+        marks += label(add(V, bis, 26), angs[i] + '°');
+      }
+    }
+    const fig = svgWrap(poly + marks, pts, 28, 250);
+    return {
+      fig,
+      question: `下の${nName}で、角 あ の大きさは何度ですか。`,
+      answer: `${angs[aIdx]}度`,
+      work: `${nName}の内角の和は 180°×(${n}－2) ＝ ${180 * (n - 2)}°。<br>あ ＝ ${180 * (n - 2)} －（${others.join('＋')}）＝ ${angs[aIdx]}°`,
+      blanks: 1,
+    };
+  });
+}
+
 // ==================== 単元定義 ====================
 const UNIT_DEFS = [
   { key: 'Z1', label: 'Z1 三角定規の角', sub: '2枚の三角定規でできる角をもとめる', gen: makeZ1 },
+  { key: 'Z2', label: 'Z2 多角形の内角の和', sub: '四角形・五角形・六角形の角をもとめる', gen: makeZ2 },
   { key: 'Z5', label: 'Z5 四角形の性質', sub: '平行四辺形・長方形・ひし形・正方形の性質', gen: makeZ5 },
   { key: 'G1', label: 'G1 折れ線グラフ', sub: 'グラフを読む・変化の大きさをつかむ', gen: makeG1 },
   { key: 'G2', label: 'G2 グラフの使い分け', sub: '折れ線グラフ・棒グラフのえらび方', gen: makeG2 },
@@ -438,7 +503,7 @@ const LEVEL_HINTS = {
 
 // ==================== 状態 ====================
 let state = {
-  units: new Set(['Z1', 'Z5', 'G1', 'G2']),
+  units: new Set(['Z1', 'Z2', 'Z5', 'G1', 'G2']),
   level: 2, count: 6,
   showNameDate: true, showTime: true, showWork: true, showStamp: true, showExplain: true,
   answerMode: 'with', sets: 3, step: 1,
