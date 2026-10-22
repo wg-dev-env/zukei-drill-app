@@ -484,10 +484,62 @@ function makeZ2(level) {
   });
 }
 
+// ==================== 単元：Z6 面積（三角形・平行四辺形・台形・ひし形） ====================
+function makeZ6(level) {
+  const pool = level === 1 ? ['tri', 'para'] : level === 2 ? ['tri', 'para', 'trap'] : ['tri', 'para', 'trap', 'rhom'];
+  const key = pick(pool);
+  const big = level === 3;
+  let fig, question, answer, work;
+  const dimLbl = (p, t, c) => label(p, t, c || '#1a1a1a');
+  if (key === 'tri') {
+    let b = rand(big ? 6 : 4, big ? 16 : 10), h = rand(big ? 5 : 3, big ? 12 : 8); if ((b * h) % 2) h++;
+    const area = b * h / 2, sc = 150 / Math.max(b, h), B = b * sc, H = h * sc, ax = B * (rand(35, 65) / 100);
+    const pts = [{ x: 0, y: H }, { x: B, y: H }, { x: ax, y: 0 }];
+    const poly = `<polygon points="${pts.map(ptStr).join(' ')}" fill="#eef4fb" stroke="#1a1a1a" stroke-width="1.5"/>`;
+    const hl = `<line x1="${fmt(ax)}" y1="0" x2="${fmt(ax)}" y2="${fmt(H)}" stroke="#2a78d6" stroke-width="1" stroke-dasharray="4 3"/>`;
+    const ram = rightAngleMark({ x: ax, y: H }, { x: ax, y: 0 }, { x: B, y: H }, 8);
+    fig = svgWrap(poly + hl + ram + dimLbl({ x: B / 2, y: H + 15 }, `${b}cm`) + dimLbl({ x: ax + 30, y: H / 2 }, `高さ${h}cm`, '#2a78d6'), pts.concat([{ x: ax + 58, y: 0 }]), 18, 230);
+    question = '下の三角形の 面積は何cm²ですか。'; answer = `${area}cm²`;
+    work = `三角形の面積 ＝ 底辺 × 高さ ÷ 2<br>${b} × ${h} ÷ 2 ＝ ${area}（cm²）`;
+  } else if (key === 'para') {
+    let b = rand(big ? 6 : 4, big ? 15 : 11), h = rand(big ? 5 : 3, big ? 11 : 8); const area = b * h;
+    const sc = 150 / Math.max(b, h), B = b * sc, H = h * sc, sk = Math.min(42, B * 0.33);
+    const pts = [{ x: 0, y: H }, { x: B, y: H }, { x: B + sk, y: 0 }, { x: sk, y: 0 }];
+    const poly = `<polygon points="${pts.map(ptStr).join(' ')}" fill="#eef4fb" stroke="#1a1a1a" stroke-width="1.5"/>`;
+    const hl = `<line x1="${fmt(sk)}" y1="0" x2="${fmt(sk)}" y2="${fmt(H)}" stroke="#2a78d6" stroke-width="1" stroke-dasharray="4 3"/>`;
+    const ram = rightAngleMark({ x: sk, y: H }, { x: sk, y: 0 }, { x: B, y: H }, 8);
+    fig = svgWrap(poly + hl + ram + dimLbl({ x: B / 2, y: H + 15 }, `${b}cm`) + dimLbl({ x: sk + 30, y: H / 2 }, `高さ${h}cm`, '#2a78d6'), pts, 18, 230);
+    question = '下の平行四辺形の 面積は何cm²ですか。'; answer = `${area}cm²`;
+    work = `平行四辺形の面積 ＝ 底辺 × 高さ<br>${b} × ${h} ＝ ${area}（cm²）`;
+  } else if (key === 'trap') {
+    let a = rand(3, big ? 9 : 7), b = rand(a + 2, big ? 16 : 12), h = rand(big ? 5 : 3, big ? 11 : 8); if (((a + b) * h) % 2) h++;
+    const area = (a + b) * h / 2, sc = 150 / Math.max(b, h), A = a * sc, B = b * sc, H = h * sc, x0 = (B - A) / 2;
+    const pts = [{ x: 0, y: H }, { x: B, y: H }, { x: x0 + A, y: 0 }, { x: x0, y: 0 }];
+    const poly = `<polygon points="${pts.map(ptStr).join(' ')}" fill="#eef4fb" stroke="#1a1a1a" stroke-width="1.5"/>`;
+    const hl = `<line x1="${fmt(x0)}" y1="0" x2="${fmt(x0)}" y2="${fmt(H)}" stroke="#2a78d6" stroke-width="1" stroke-dasharray="4 3"/>`;
+    const ram = rightAngleMark({ x: x0, y: H }, { x: x0, y: 0 }, { x: B, y: H }, 8);
+    fig = svgWrap(poly + hl + ram + dimLbl({ x: B / 2, y: -7 }, `${a}cm`) + dimLbl({ x: B / 2, y: H + 15 }, `${b}cm`) + dimLbl({ x: x0 + 30, y: H / 2 }, `高さ${h}cm`, '#2a78d6'), pts, 18, 230);
+    question = '下の台形の 面積は何cm²ですか。'; answer = `${area}cm²`;
+    work = `台形の面積 ＝ (上底 ＋ 下底) × 高さ ÷ 2<br>(${a} ＋ ${b}) × ${h} ÷ 2 ＝ ${area}（cm²）`;
+  } else {
+    let d1 = rand(big ? 6 : 4, big ? 16 : 12), d2 = rand(big ? 6 : 4, big ? 14 : 10); if ((d1 * d2) % 2) d2++;
+    const area = d1 * d2 / 2, sc = 150 / Math.max(d1, d2), W = d1 * sc, Hh = d2 * sc, cx = W / 2, cy = Hh / 2;
+    const pts = [{ x: cx, y: 0 }, { x: W, y: cy }, { x: cx, y: Hh }, { x: 0, y: cy }];
+    const poly = `<polygon points="${pts.map(ptStr).join(' ')}" fill="#eef4fb" stroke="#1a1a1a" stroke-width="1.5"/>`;
+    const diag = `<line x1="0" y1="${fmt(cy)}" x2="${fmt(W)}" y2="${fmt(cy)}" stroke="#2a78d6" stroke-width="1" stroke-dasharray="4 3"/>`
+      + `<line x1="${fmt(cx)}" y1="0" x2="${fmt(cx)}" y2="${fmt(Hh)}" stroke="#2a78d6" stroke-width="1" stroke-dasharray="4 3"/>`;
+    fig = svgWrap(poly + diag + dimLbl({ x: cx * 0.5, y: cy - 7 }, `${d1}cm`, '#2a78d6') + dimLbl({ x: cx + 22, y: cy * 0.5 }, `${d2}cm`, '#2a78d6'), pts, 18, 220);
+    question = '下のひし形の 面積は何cm²ですか。'; answer = `${area}cm²`;
+    work = `ひし形の面積 ＝ 対角線 × 対角線 ÷ 2<br>${d1} × ${d2} ÷ 2 ＝ ${area}（cm²）`;
+  }
+  return { fig, question, answer, work, blanks: 1 };
+}
+
 // ==================== 単元定義 ====================
 const UNIT_DEFS = [
   { key: 'Z1', label: 'Z1 三角定規の角', sub: '2枚の三角定規でできる角をもとめる', gen: makeZ1 },
   { key: 'Z2', label: 'Z2 多角形の内角の和', sub: '四角形・五角形・六角形の角をもとめる', gen: makeZ2 },
+  { key: 'Z6', label: 'Z6 面積', sub: '三角形・平行四辺形・台形・ひし形の面積', gen: makeZ6 },
   { key: 'Z5', label: 'Z5 四角形の性質', sub: '平行四辺形・長方形・ひし形・正方形の性質', gen: makeZ5 },
   { key: 'G1', label: 'G1 折れ線グラフ', sub: 'グラフを読む・変化の大きさをつかむ', gen: makeG1 },
   { key: 'G2', label: 'G2 グラフの使い分け', sub: '折れ線グラフ・棒グラフのえらび方', gen: makeG2 },
@@ -503,7 +555,7 @@ const LEVEL_HINTS = {
 
 // ==================== 状態 ====================
 let state = {
-  units: new Set(['Z1', 'Z2', 'Z5', 'G1', 'G2']),
+  units: new Set(['Z1', 'Z2', 'Z5', 'Z6', 'G1', 'G2']),
   level: 2, count: 6,
   showNameDate: true, showTime: true, showWork: true, showStamp: true, showExplain: true,
   answerMode: 'with', sets: 3, step: 1,
